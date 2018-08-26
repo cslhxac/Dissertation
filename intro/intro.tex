@@ -1,4 +1,40 @@
 \chapter{Introduction}
-This documents presents a set of techniques and algorithms in solving large scale linear equations that emerged from the simulations of physical phenomenal. Those techniques has enabled large scale simulations that provides not only significantly more visual details but also higher fidelity solutions, and exposes challenges that were previously unrecognized in small scale simulations.
+In recent years, computation power in workstations has leaped, not by increasing core speed,  but by increment of core count, larger SIMD(same instruction multiple data) width(such as AVX512), deeper level of memory hierarchy(such as MCDRAM in knights landing), and bus interconnected accelerators(such as GPUs). This change of hardwares has opened up new opportunities in re-designing and re-architecting algorithms in numerical simulation that adapts to this paradigm.
 
-Those techniques are demonstrated in the context of heterogenous poisson equation, 2nd order accurate fluid simulation, and large scale linear elasticity solver for topology optimization. 
+This documents presents a set of techniques and algorithms for solving large scale linear equations that emerge from the simulations of physical phenomenal targeted for modern hardwares. They are demonstrated by adapting and redesigning solvers for two specific problems: homogeneous Poisson and heterogeneous linear elasticity, discretized on a Cartesian grid. The solvers presented  in this thesis has enabled billion degrees of freedom (DOF) simulations on a single workstation. Such scale not only provided a stunning level of visual detail and higher accuracy in solution\textcolor{red}{(Topology optimization validation)}, more importantly, exposed the limitations of the iterative solvers.
+
+For those discoveries, the last part of the thesis proposes a novel augmented geometric Multigrid solver for linear elasticity that address the slow convergence issue of standard Multigrid preconditioned conjugate gradient solvers on domains with complex geometry.
+
+\section{Thesis}
+
+The progression of computation power of modern processors has shifted towards the direction of more parallelism and more heterogeneous. In pursue of higher resolution simulations, new paradigm for designing solvers are needed to take advantage of this shift. This document uses concrete designs of two solvers to demonstrates this new paradigm. The solvers are benchmarked and compared with the theoretical throughput of the platform to illustrate their efficiency.
+
+At achieving higher resolution, the limitation of existing numerical methods will be explored. This document will also propose new algorithms that addresses those limitations. 
+
+\section{Motivation}
+
+Physics based simulation originated in the field of engineering. Some examples are: Air dynamic simulation has been wildly used in aircraft design. The simulation of elasticity has been employed for designs of large scale structures. In recent years, physics based simulation has also been applied in the field of computer graphics. The simulation of smoke and water has been ubiquitous in special effects. The soft body simulation has also made into the standard animation pipelines.
+
+The scale of simulation is important for two major reasons: first, large scale simulation is important when evaluating the convergence of the solution for the purpose pf validation. Numerical simulations discretize continuous equations and solve them with a given resolution. At the limit of refinement, the discretized solution will converge to the continuous one. The ability of going higher resolution in simulation can be used to validate that the discretized solutions' convergence to the continious problem. and used to extrapolate the continuous solution. Second, large scale can simulate more detailed structures. Those details are not only for visual richness, but also significant for finding solutions for complex structures.
+
+To increase the scale of simulation, traditionally it was rely upon frequency scaling of CPU core speed. But in the past 10 years, such scaling has come to a halt. The exponential computation power growth on CPU has been achieved through increment of core counts and wider data level parallelism width. In the meanwhile, computation accelerators (GPUs, Intel Xeon Phi) has emerged as potent computation units that provides fast memory bandwidth and significant amount of computation FLOPS( Floating Point Operations per Second) with the trade off that they usually has a smaller memory size, less integer operations, and slower unaligned random memory assess due to the lack of large memory cache.
+
+Inspired by the change in modern hardware, this document takes examples to demonstrate efficient numerical solvers in the context of modern hardware. Sometimes it requires careful re-engineering existing algorithms combined with a novel data structure to achieve a faster and more memory efficient solver, and sometimes it requires a brand new algorithm that takes the hardware heterogeneity into consideration to avoid hardware bottleneck.
+
+\section{Contributions}
+
+\paragraph{Data-Level Parallelism for Simulation Using SIMD}  Techniques that utilize SIMD instructions, not only on accelerators, but also on AVX-enabled CPUs are presented. The main challenge in SIMD programming is to assess memory in alignment. The document also presents the cases that when aligned memory assess is difficult to achieve, SIMD can also be used for stack allocated data to maximize computation density.
+
+\paragraph{A Domain Decomposition Algorithm Targeting Multi-Accelerator Computation Platform} Design of a homogeneous Poisson solver that utilize multi-accelerator equipped compute platforms. A multi-accelerator equipped compute platform can features an order of magnitude higher aggregate compute FLOPS and memory bandwidth. But the inter-accelerator communication is carried on data buses(such as PCI-E) that have both low bandwidth and high latency. An novel domain decomposition algorithm is presented that targets to minimize the frequency and amount of data that is communicated between across accelerators.
+
+\paragraph{Examination Of Numerical Limit At High Resolution Simulation and Mix Precision Scheme} At high simulation resolution, the discrete differential operators start to exhibit larger numerical cancellation error. To avoiding the full cost of double precision, a mix precision scheme is proposed to achieve double precision accuracy while retain the most of the computation in single precision.
+
+\paragraph{A Stencil-Aware Geometric Multigrid Algorithm For Linear Elasticity} One of the advantage of high resolution simulation is the amount of detail that is capable of capturing. But those complex geometrical details can severely impair the convergence of existing multi-linear interpolated Multigrid solver convergence. To address this convergence problem for high resolution linear elasticity simulation, a stencil-aware geometric Multigrid algorithm is proposed that can reduce residual by approximately half every itertation even with the most irregular domains.
+
+\section{Sparse Paged Grid as Data Structure} 
+There are many ways to discretize a continuous simulation domain, the three most common ones are Cartesian grids representations, conforming mesh representation and particle representation. In this work, a Cartesian grid based data structure named Sparse Paged Grid (SPGrid) for the following reasons:
+\begin{itemize}
+	\item a Cartesian grid based discretization is regular. Every degree of freedom(DOF) is connected to the same number of (DOF) with the same geometric offset. Such regularity makes data level parallelism and utilizing SIMD instructions significantly easier in comparison to other representation.
+	\item SPGrid 
+
+\end{itemize}
