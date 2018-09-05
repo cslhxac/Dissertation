@@ -1,0 +1,12 @@
+\chapter{Numerical Solvers in Physics Based Simulation} \label{Chapter:Solver}
+In the pipeline of physics based simulation, the complexity of majority of the stages are simply $O(N)$, where $N$ is the number of unknowns, while the complexity of the solve stage can be as much as $O(N^2)$. For high resolution simulation, the solve stage can often take over 90\% of the simulation time. There are two major categories of numerical solvers, direct solvers and iterative solvers. 
+
+Direct solvers provide solution at the precision of the numerical limit, and they generally operates in sparse matrix format (for instance Compressed Sparse Column). Therefore they can be used in arbitrary discretization and problems, but they have the minimal cost of $O(N^2)$ and memory footprint of $O(N^{\frac{4}{3}})$ or higher. This super-linear cost makes direct solvers infeasible for high resolution simulations. But for small scale simulations, direct solver algorithms such as Cholesky factorization are attractive for their accuracy and robustness. 
+
+Iterative solvers, on the other hand, as the name suggests, provides a solution that converges to the exact solution with each iteration. Some iterative solvers, such as Conjugate Gradient Method[\cite{nocedal2006conjugate}] and Generalized Minimal Residual algorithm\cite{saad1986gmres}], mathematically speaking, can achieve the exact solution at the $N$th iteration. At the cost of $O(N)$ per iteration, it will give the exact solution with $O(N^2)$ cost. But in practice, due to numerical drift, those algorithm will require restarts for large problems, and can't achieve the exact solution to numerical limit. 
+
+For large problems, an iterative solver is preferred over direct solver for two major reasons: 1. the memory footprint of an iterative solver is usually $O(N)$, which allows larger problems to fit into memory. 2. Though iterative solve can potentially takes longer to achieve solution at numerical limit, the option to terminate early in exchange for an approximate solution is attractable when computation time is limited. But at higher and higher resolution, iterative solvers can take considerably longer to converge and sometimes even stagnate (See results in Chapter \ref{Chapter:Elasticity}). If terminates too early, the poorly approximated solution can lead to unphysical results, due to that the solution can not satisfies the governing equation.
+
+\section{Multigrid Method}
+
+Multigrid method was proposed by A. Brandt in 1977[\cite{brandt1977multi}].
