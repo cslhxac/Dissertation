@@ -7,8 +7,7 @@ Iterative solvers, on the other hand, as the name suggests, provides a solution 
 
 For large problems, an iterative solver is preferred over direct solver for two major reasons: 1. the memory footprint of an iterative solver is usually $O(N)$, which allows larger problems to fit into memory. 2. Though iterative solve can potentially takes longer to achieve solution at numerical limit, the option to terminate early in exchange for an approximate solution is attractable when computation time is limited. But at higher and higher resolution, iterative solvers can take considerably longer to converge and sometimes even stagnate (See results in Chapter \ref{Chapter:Elasticity}). If terminates too early, the poorly approximated solution can lead to unphysical results, due to that the solution can not satisfies the governing equation.
 
-\section{Multigrid Method}
-\subsection{Overview}
+\section{Multigrid Method Overview}
 Multigrid method was proposed in work [\cite{brandt1977multi}]. The multigrid fundamental idea lies as follows: we start with a set of grids $G^0$,$G^1$,...,$G^M$, which are all discretization of the same domain $\Omega$. With higher level consists of a coarser elements. In our uniform grid discretization, int 1D, if the nodes in $G^0$ lies on points $(0,h,2h,3h,4h...)$. We can construct the next level $G^1$ as nodes on points $(0,2h,4h,6h,8h...)$.
 
 If our continuous PDE of the boundary value problem takes the form:
@@ -19,18 +18,18 @@ Here, $L$ and $\Lambda$ are the differential operators that are on the interior 
 \begin{equation}\label{equ:mg_operator}
 L^kU^k(x) = F^k(x)\text{, for} x \in G^k,  \Lambda^k U^k(x) = \Phi^k(x)\text{, for} x\in\partial G^k 
 \end{equation}
-Now, $L^k$ and $\Lambda^k$ are linear operators and can be perceived as matrices. We are interested in acquiring the solution at the finest level. The main idea is, if at $k$th level, the solution $U^k(x)$ is a good approximation to the continuous $U(x)$. We can use the $k$th level solution as a potent guess for the $k-1$ level. Then apply a correction routine we call \textbf{smoother} that is $O(|G^{k-1}|)$ cost to bring the guess close to solution. This process is repeated until $U^0(x)$ is considered close enough to the solution. 
+Now, $L^k$ and $\Lambda^k$ are linear operators and can be perceived as matrices. We are interested in acquiring the solution at the finest level. The main idea is, if at $k$th level, the solution $U^k(x)$ is a good approximation to the continuous $U(x)$. We can use the $k$th level solution as a potent guess for the $k-1$ level. Then apply a correction routine called \textbf{smoother} that is $O(|G^{k-1}|)$ cost to bring the guess close to solution. This process, sometimes refers to as V-cycle or W-cycle, is repeated until $U^0(x)$ is considered close enough to the solution. 
 
 Multigrid has the property that each iteration can reduce the error by at least a constant factor $W$. That is $\frac{|\mathbf{e}_{i+1}|}{|\mathbf{e}_{i}|}<W$. Here we take $|\mathbf{e}|$ as the infinite norm of $\mathbf{e}$. What the value of $W$ is depends on the PDE, how the discretization of each level is constructed, and how potent the smoother is. The convergence property of multigrid will  be elaborate more in later section. But we can see that if we seek to reduce the error by 6 orders of magnitude, we will need $-\log_W 10^6$ iterations to converge, which is a constant. For instance if $W = 0.5$, it will take at most 20 iterations to converge. But, of course, in bad cases, for instance, when $W = 0.99$, it will take about 1400 iterations.
 
 Now we have introduced some fundamental multigrid concepts, let's take a deep look at multigrid implementations.
-\subsection{Construction of the Hierarchy}
-For constructing the discretized hierarchal operators in equations \ref{equ:mg_operator}, there are two common ways, geometric coarsening and Galerkin coarsening. In work [\cite{zhu2010efficient}], [\cite{mcadams2010parallel}], geometric coarsening was used to construct hierarchal operators. For the domain decomposition solver, geometric coarsening based multigrid is also it's building block, but more on that later. 
+\section{Construction of the Hierarchy}
+For constructing the discretized hierarchal operators in equations \ref{equ:mg_operator}, there are two common ways, geometric coarsening and Galerkin coarsening. In work [\cite{zhu2010efficient}], [\cite{mcadams2010parallel}], geometric coarsening was used to construct hierarchal operators. For the domain decomposition solver, geometric coarsening based multigrid is used as it's building block, see Chapter \ref{Chapter:DD}. 
 
 But in many cases, only the top level operator is provided to the solver, and the underlining PDE is inaccessible, re-discretization of the PDE with a coarser grid(or mesh) is not an option, in those cases, Galerkin coarsening is usually used for constructing the hierarchy, such as in work [\cite{dendy1982black}], [\cite{brezina2001algebraic}], and [\cite{dohrmann2007interpolation}]. This is also our method for the multigrid construction in our SIMD-optimized solver for topology optimization.  
 
 When the underlining PDE is unavailable, there is the possibility to acquire the geometric coarsened operator through homogenization of Galerkin coarsened operator which is demonstrated in work [\cite{moulton1998black}]. But this is aspect is not the focus of this work. Therefore I will leave out here the discussion of homogenization.
-\subsection{Geometric Coarsening}
+\section{Geometric Coarsening}
 Geometric coarsening refers to the method of constructing the Multigrid hierarchy through re-discretization with different grid size. It has been proven effective for both homogeneous Poisson[\cite{mcadams2010parallel}] and homogeneous elasticity[\cite{zhu2010efficient}]. Here I will take finite difference Poisson discretization as an example to demonstrates the geometric coarsening principles and its limitation. For more details, I would refer the reader to the work[\cite{mcadams2010parallel}].
 
 The continuous PDE of homogeneous Poisson can be written as:
@@ -51,7 +50,7 @@ It is a 2nd order accurate discretization as we can write:
 $$
 \frac{\partial^2 p}{\partial x^2}(x_0) = \frac{p(x_0)-p(x_0)}{h^2} + O(h^2)
 $$
-As for boundary conditions, either Nuemann/nature boundary or Dirichlet/essential boundary, we can discretize the operator as shown in Figure ~\ref{fig:PoissonBoundary}. It is only 2nd order accurate, if the boundary condition is perfect aligned with cell. But generally multigrid is used as preconditioner. For that purpose, this discretization is proven to be sufficient for precinditioner even with non-cell align boundaries[\cite{aanjaneya2017power}]. 
+As for boundary conditions, either Nuemann/nature boundary or Dirichlet/essential boundary, we can discretize the operator as shown in Figure ~\ref{fig:PoissonBoundary}. It is only 2nd order accurate, if the boundary condition is perfect aligned with cell. But generally multigrid is used as preconditioner. For that purpose, this discretization is proven to be sufficient for preconditioner even with non-cell align boundaries[\cite{aanjaneya2017power}]. 
 \begin{figure}[t]
 \includegraphics[width=4cm]{Poisson_Stencil}
 \centering
@@ -73,3 +72,113 @@ But even though we may assume that the boundary conditions are cell aligned at t
   \caption{Geometric coarsening of the simulation domain. Left: if one of the cells is Dirichlet cell, we will coarsen it as Dirichlet cell at the coarse level, Right: otherwise if one of the cells is interior cell, we will coarsen it as interior cell at the coarse level}
   \label{fig:GeometricCoarsening}
 \end{figure}
+\section{Garlerkin Coarsening}
+Galerkin coarsening, also sometimes refers to algebraic coarsening, is usually the preferred method for handling complex geometries or heterogeneous domains. It was summarized in work [\cite{brandt1986algebraic}]. Many algebraic algorithms, assumes only the top level linear operator is available in matrix form. In such case, the first step of the algorithm is to select the coarse grid DOF based on the matrix given. In this dissertation, we choose the coarsened DOF the same way as in geometric multigrid, that is, coarse DOF coincide with every other fine DOF in each dimension. If readers are interested in the coarse grid selection, I will direct to work [\cite{vanvek1996algebraic}][\cite{brandt1986algebraic}].
+
+After the coarse grid selection, a \textbf{prolongation} operator is constructed. It is a linear operator that interpolates fine DOF values from coarse DOF. The most common prolongation operator is multi-linear interpolation. In 1D, it can be illustrated as Figure~\ref{fig:MultilinearInterpolation}.
+\begin{figure}[t]
+\centering
+\includegraphics[width=6cm]{Interpolation}
+  \caption{Multilinear prolongation operator in 1D. The value from corresponding fine nodes is copied from the coarse node, it they coincide in the domain, otherwise the fine node value is interpolated from the two closest coarse nodes each with weight 0.5.}
+  \label{fig:MultilinearInterpolation}
+\end{figure}
+
+We can also write this in matrix form:
+$$
+\mathbf{P} = \begin{bmatrix}
+1 & 0 & 0 \\
+0.5 & 0.5 & 1 \\ 
+0 & 1 & 0 \\
+0 & 0.5 & 0.5 \\
+0 & 0 & 1
+\end{bmatrix}
+$$
+The interpolation process is then:
+\begin{equation}
+\mathbf{u}^f = \mathbf{P} \mathbf{u}^c
+\end{equation}
+Here $\mathbf{x}^f$ is the fine grid value and $x^c$ is the coarse grid value. In the case of multi-level hierarchy, we can denote the prolongation operator from level $k+1$ to level $k$ as $\mathbf{P}^k$. Therefore:
+\begin{equation}
+\mathbf{u}^k = \mathbf{P}^k \mathbf{u}^{k+1}
+\end{equation}
+Here, $P$ is a rank deficient matrix, which means when prolongate from a coarse level to a fine level, the vector at fine level has a higher dimension and is in general not the correct solution of the fine level discretization. Therefore, smoother is the process used to correct this error. This means smoother should be selected based on error that is invisible to coarse grid, and vise versa, coarse grid should correct error mode that hard to reduce by smoother. In the next section we will discuss more this duality.  Multilinear interpolation has proven to be effective prolongation operator for homogeneous and isotropic PDEs[\cite{mcadams2010parallel}][\cite{aanjaneya2017power}][\cite{zhu2010efficient}]. It is also used by geometric multigrid. 
+
+Now we have defined the prolongation operator $\mathbf{P}^k$. The Galerkin coarsening process construct the $k+1$ operator $\mathbf{L}^{k+1}$ as follows:
+\begin{equation}
+\mathbf{L}^{k+1} = (\mathbf{P}^k)^T \mathbf{L}^{k}\mathbf{P}^k
+\end{equation}
+The coarse level correction can be written as(for solving $\mathbf{L}\mathbf{u} = \mathbf{f}$):
+\begin{align*}
+\mathbf{r} &= \mathbf{b} - \mathbf{L}\mathbf{u}_0 \\
+\mathbf{b}^c &= \mathbf{P}^T\mathbf{r} \\
+\mathbf{u}^c &= (\mathbf{L}^c)^{-1} \mathbf{b}^c \\
+\mathbf{u}^* &= \mathbf{u}_0 + \mathbf{P}\mathbf{u}^c\\
+\end{align*}
+Here, superscript c indicates unknowns and matrices from the coarse grid. $\mathbf{u}_0$ is the current guess of the fine level solution.$\mathbf{u}^*$ is the new guess of the fine level solution after the coarse correction.
+\begin{lem}\label{lemma:projection}The coarse grid correction of Galerkin coarsened hierarchy is a projection.\end{lem}
+\begin{proof}
+This lemma suggests when doing coarse correction twice, the second correction process will create the same result as first one.
+
+If we start with $\mathbf{u}^* = \mathbf{u}_0 + \mathbf{P}\mathbf{u}^c$.
+\begin{align*}
+\mathbf{r}^* &= \mathbf{b} - \mathbf{L}\mathbf{u}^* \\
+\mathbf{b}^{*c} &= \mathbf{P}^T\mathbf{r}^* \\
+&= \mathbf{P}^T(\mathbf{b} - \mathbf{L}\mathbf{u}^*) \\
+&= \mathbf{P}^T(\mathbf{b} - \mathbf{L}(\mathbf{u}_0 + \mathbf{P}\mathbf{u}^c))\\
+&= \mathbf{P}^T(\mathbf{b} - \mathbf{L}\mathbf{u}_0) - \mathbf{P}^T\mathbf{L}\mathbf{P}\mathbf{u}^c \\
+&= \mathbf{P}^T\mathbf{r} - \mathbf{L}^c\mathbf{u}^c \\
+&= \mathbf{b}^c - \mathbf{b}^c \\
+&= 0
+\end{align*}
+We can see that the second correction process will have $0$ as right hand side, therefore no correction will be produced.
+\end{proof}
+In general, we have $rank(L^{k+1}) < rank(L^{k})$. Lemma \ref{lemma:projection} implies that the coarse grid correction is projecting the fine solution onto a subspace and solve within the subspace. All the error modes $\mathbf{e}$ that has property $\mathbf{P}\mathbf{e} = \mathbf{0}$ will be invisible to the coarse level, and rely on the smoother for correction.
+\section{Multigrid V-cycle}
+Now we have constructed the hierarchy, let's take a look at a multigrid V-cycle.
+\begin{algorithm}[H]
+\caption{Multigrid V-cycle}
+\label{alg:vcycle}
+\begin{algorithmic}
+\STATE $\mathbf{u}^0 = \mathbf{0}$
+\STATE $\mathbf{r}^0 = \mathbf{b}^0 - \mathbf{L}^0\mathbf{u}^0$
+\WHILE{$|\mathbf{r}^0| < threshold$ || max\_iteration has reached}
+	\FOR{i := 0 \TO k - 2}
+		\STATE smooth($\mathbf{u}^i,\mathbf{L}^i,\mathbf{b}^i$);
+		\STATE $\mathbf{r}^i = \mathbf{b}^i - \mathbf{L}^i\mathbf{u}^i$
+		\STATE $\mathbf{b}^{i+1} = (\mathbf{P}^i)^T\mathbf{r}^i $
+	\ENDFOR
+	\STATE $\mathbf{u}^{k-1} = (\mathbf{L}^{k-1})^T \mathbf{b}^{k-1}$	
+	\FOR{i := k - 2 \TO 0}
+		\STATE $\mathbf{u}^{i} += \mathbf{P}^i\mathbf{u}^{i+1} $
+		\STATE smooth($\mathbf{u}^i,\mathbf{L}^i,\mathbf{b}^i$);		
+	\ENDFOR
+	\STATE $\mathbf{r}^0 = \mathbf{b}^0 - \mathbf{L}^0\mathbf{u}^0$
+\ENDWHILE
+\end{algorithmic}
+\end{algorithm}
+The process of rather straight forward: at each level, first, we reduce errors that are (hopefully) invisible to the coarse grid using a smoother. Then the residual of the remaining error is computed and restricted to the coarse level. This process is repeated until  the bottom level is reached where the problem is small enough to be solved using a direct solver. This coarse level correction is than prolongated to finer levels, then the smoother is applied again until this process reaches the top. The multigrid V-cycle can be repeated until satisfactory convergence is reached or the max number of iterations has reached.
+
+This multigrid iteration has an asymptotic convergence, that is, after enough iterations, the ratio between the residual norm at iteration $k$ and iteration $k+1$ will converge to a constant[\cite{brandt1977multi}]. After introducing the smoother in the next section, I will give a more concrete example on what this asymptotic convergence can be for an ideal problem.
+\section{Smoother}
+Smoother a generally refer to a class of iterative solvers that use only local information, and the cost of each application is comparable to a matrix multiplication. Common smoothers are (but not restricted to) Jacobi method, Gauss-Seidel method, Richardson iteration, and successive over-relaxation method. As the simplest, I will take Richardson iteration as example. Richardson iteration can be written as(using notations from before):
+ \begin{align*}
+\mathbf{r} &= \mathbf{b} - \mathbf{L}\mathbf{u}_k \\
+\mathbf{u}_{k+1} &= \mathbf{u}_k\mathbf{r} \\
+\end{align*}
+Here $\mathbf{u}_k$ is the solution at iteration $k$. If we define $\mathbf{u}^*$ the solution, that is
+$$
+\mathbf{L}\mathbf{u}^* = \mathbf{b}
+$$
+We can write the error of the current solution  as
+$$
+\mathbf{e}_k = \mathbf{u}^* - \mathbf{u}_k 
+$$
+And the residual is then
+$$
+\mathbf{r}_k = \mathbf{L}\mathbf{e}_k
+$$
+Assuming $\mathbf{L}$ is symmetric positive definite. We write the Eigen vector of $\mathbf{L}$ as $\mathbf{v}_i$, that are orthogonal to each other. Then we can write the error as combination of the Eigen vectors:
+$$
+\mathbf{e}_k = \sum_i \gamma_i\mathbf{v}_i
+$$
+Here $\gamma_i$ are the length when project $\mathbf{e}_k$ onto $\mathbf{v}_i$.

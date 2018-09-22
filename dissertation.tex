@@ -21,6 +21,17 @@
 \usepackage{color}
 \usepackage{caption}
 \usepackage{subcaption}
+\usepackage{amsthm}
+\usepackage[chapter]{algorithm}
+\usepackage{algorithmic}
+\theoremstyle{plain}
+\newtheorem{thmN}{Theorem}[chapter] % reset theorem numbering for each chapter
+\newtheorem{lem}[thmN]{Lemma}
+
+\theoremstyle{definition}
+\newtheorem{defn}[thmN]{Definition} % definition numbers are dependent on theorem numbers
+\newtheorem{exmp}[thmN]{Example} % same for example numbers
+
 \input{includes/preamble}
 \input{includes/defs}
 \input{includes/thesisdefs}
