@@ -209,7 +209,7 @@ M_1(\mathbf{Q},\mathbf{e}) := \frac{<(\mathbf{I}-\mathbf{Q})\mathbf{e}, (\mathbf
 \label{equ:M2}
 M_2(\mathbf{Q},\mathbf{e}) := \frac{<\mathbf{L}(\mathbf{I}-\mathbf{Q})\mathbf{e}, (\mathbf{I}-\mathbf{Q})\mathbf{e}>}{<\mathbf{L}\mathbf{e},\mathbf{e}>}
 \end{equation}
-$M_2$ is used in work [\cite{mccormick1984multigrid},\cite{mccormick1982multigrid},\cite{mccormick1985multigrid}]. $M_1$ is introduced in [\cite{brandt1986algebraic}]. The metric measures how well the prolongation operator is for a given error $\mathbf{e}$. But we has not defined $\mathbf{Q}$ yet. Here is the defination: 
+$M_2$ is used in work [\cite{mccormick1984multigrid},\cite{mccormick1982multigrid},\cite{mccormick1985multigrid}]. $M_1$ is introduced in [\cite{brandt1986algebraic}]. The metric measures how well the prolongation operator is for a given error $\mathbf{e}$. But we have not defined $\mathbf{Q}$ yet. Here is the definition: 
 \begin{equation}
 \mathbf{Q} = \mathbf{P}\mathbf{R}
 \end{equation}
@@ -227,7 +227,7 @@ So we can derive:
 \begin{equation}
  \mathbf{R} = (\mathbf{P}^T\mathbf{L}^f\mathbf{P})^{-1}\mathbf{P}^T\mathbf{L}^f
 \end{equation}
-By using this defination of $\mathbf{R}$, we have $\mathbf{R}\mathbf{P} = \mathbf{I}_c$. $\mathbf{I}_c$ is the identity matrix of the same dimension of number of DOF in the coarse grid. That is, for error modes that can be resolved in the coarse grid, i.e. error modes can be written as $\mathbf{e}^f = \mathbf{P}\mathbf{e}^c$. We have:
+By using this definition of $\mathbf{R}$, we have $\mathbf{R}\mathbf{P} = \mathbf{I}_c$. $\mathbf{I}_c$ is the identity matrix of the same dimension of number of DOF in the coarse grid. That is, for error modes that can be resolved in the coarse grid, i.e. error modes can be written as $\mathbf{e}^f = \mathbf{P}\mathbf{e}^c$. We have:
 \begin{align*}
 \mathbf{Q}\mathbf{e}^f &= \mathbf{P}\mathbf{R}\mathbf{e}^f\\
 &= \mathbf{P}\mathbf{R}\mathbf{P}\mathbf{e}^c\\
@@ -238,10 +238,83 @@ By using this defination of $\mathbf{R}$, we have $\mathbf{R}\mathbf{P} = \mathb
 &= \mathbf{e}^f
 \end{align*}
 We can see that 
-$$
+\begin{equation}\label{equ:projection_Q}
 (\mathbf{I} - \mathbf{Q})\mathbf{e}^f = \mathbf{0}\text{, if $\exists$ $\mathbf{e}^c$, s.t. }\mathbf{e}^f = \mathbf{P}\mathbf{e}^c
-$$
-But unfortunately, using this defination of $\mathbf{R}$ for analysis often is too computationaly complex as it requires the inversion of the coarse level operator $(\mathbf{L}^c)^{-1}$. Therefore in work [\cite{brezina2001algebraic}], an alternative defination of $\mathbf{R}$ is used:
-$$
-\mathbf{R}_{ij}
-$$
+\end{equation}
+But unfortunately, using this definition of $\mathbf{R}$ for analysis often is too computationally complex as it requires the inversion of the coarse level operator $(\mathbf{L}^c)^{-1}$. Therefore in work [\cite{brezina2001algebraic}], an alternative definition of $\mathbf{R}$ is used:
+\begin{equation}
+\mathbf{R}_{ij} = \left\{  
+\begin{aligned}
+    1, & \text{ if}\ \mathbf{X}^f_j = \mathbf{X}^c_i\\
+    0, & \text{ otherwise}
+  \end{aligned}\right.
+\end{equation}
+There $\mathbf{R}$ is a simple injection. That is with value $1$, where the coarse node and fine node coincide in space, i.e. $\mathbf{X}^f_j = \mathbf{X}^c_i$, where $\mathbf{X}^f_j$ is the spacial location of fine node j and $\mathbf{X}^c_i$ is the spacial location of coarse node i.
+
+\begin{lem}\label{lemma:injection}The injection based $\mathbf{R}$ creates a valid projective $\mathbf{Q}$ that satisfies Equation \ref{equ:projection_Q}.\end{lem}
+\begin{proof}
+We can rearrange the fine DOF such that fine DOF that does not spatially coincide with any coarse node first, then those that coincide with coarse node after. We can write the fine vector $\mathbf{e}$ as:
+\begin{equation*}
+\mathbf{e} = \left[ \begin{aligned}
+    \mathbf{e}_{ff}\\
+    \mathbf{e}_{fc}
+  \end{aligned}\right]
+\end{equation*}
+Accordingly, $\mathbf{R}$ and $\mathbf{P}$ can be written as:
+\begin{align*}
+\mathbf{P} &= \left[ \begin{array}{c}
+    \mathbf{P}_{cf}\\
+    \mathbf{I}_{c}
+  \end{array}\right]\\
+  \mathbf{R} &= \left[ \begin{array}{cc}
+    \mathbf{0} & \mathbf{I}_{c}
+  \end{array}\right]\\
+ \end{align*}
+ $\mathbf{Q}$ therefore become:
+ \begin{align*}
+  \mathbf{Q} &= \mathbf{P}\mathbf{R} \\
+  &= \left[ \begin{array}{cc}
+    \mathbf{0} & \mathbf{P}_{cf} \\
+    \mathbf{0} & \mathbf{I}_c
+  \end{array}\right]\\
+ \end{align*}
+ Plug into Equation \ref{equ:projection_Q}:
+ \begin{align*}
+(\mathbf{I} - \mathbf{Q})\mathbf{e} &= \left[ \begin{array}{cc}
+    \mathbf{I} & -\mathbf{P}_{cf} \\
+    \mathbf{0} & \mathbf{0}
+  \end{array}\right] \left[ \begin{array}{c}
+    \mathbf{e}_{ff}\\
+    \mathbf{e}_{fc}
+  \end{array}\right]\\
+  &= \mathbf{e}_{ff} - \mathbf{P}_{cf}\mathbf{e}_{fc} \numberthis \label{equ:proof_Q}
+\end{align*}
+If $\exists\mathbf{e}_{c}$ s.t. $\mathbf{e} = \mathbf{P}\mathbf{e}_c$:
+ \begin{align*}
+ \mathbf{P}\mathbf{e}_c &= \left[ \begin{array}{c}
+    \mathbf{P}_{cf}\\
+    \mathbf{I}_{c}
+  \end{array}\right]\mathbf{e}_c\\
+  &= \left[ \begin{array}{c}
+    \mathbf{P}_{cf}\mathbf{e}_c\\
+    \mathbf{e}_c
+  \end{array}\right]\\
+  &= \mathbf{e}\\
+  &= \left[ \begin{array}{c}
+    \mathbf{e}_{ff}\\
+    \mathbf{e}_{fc}
+  \end{array}\right]
+ \end{align*}
+ Therefore:
+  \begin{align*}
+  \mathbf{e}_{ff} &= \mathbf{P}_{cf}\mathbf{e}_c\\
+  \mathbf{e}_{fc} &= \mathbf{e}_c
+ \end{align*}
+ Plug into Equation \ref{equ:proof_Q}:
+   \begin{align*}
+   (\mathbf{I} - \mathbf{Q})\mathbf{e} &= \mathbf{e}_{ff} - \mathbf{P}_{cf}\mathbf{e}_{fc}\\
+  &= \mathbf{P}_{cf}\mathbf{e}_c - \mathbf{P}_{cf}\mathbf{e}_{fc}\\
+  &= \mathbf{0}
+ \end{align*}
+ This concludes the proof.
+\end{proof}
