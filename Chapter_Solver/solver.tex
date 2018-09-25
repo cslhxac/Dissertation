@@ -213,7 +213,7 @@ $M_2$ is used in work [\cite{mccormick1984multigrid},\cite{mccormick1982multigri
 \begin{equation}
 \mathbf{Q} = \mathbf{P}\mathbf{R}
 \end{equation}
-$\mathbf{P}$ is the prolongation operator defined in the previous sections. $\mathbf{R}$ is a restriction operator that computes a coarse vector $\mathbf{e}^c$ from a fine vecotor $\mathbf{e}^f$. In the context of galerkin coarsening, if our fine grid solution is $\mathbf{u}^*$ with initial guess of $\mathbf{u}^0 = \mathbf{0}$. The coarse grid vector $\mathbf{u}^c$ can be computed as follows:
+$\mathbf{P}$ is the prolongation operator defined in the previous sections. $\mathbf{R}$ is a restriction operator that computes a coarse vector $\mathbf{e}^c$ from a fine vecotor $\mathbf{e}^f$. In the context of Galerkin coarsening, if our fine grid solution is $\mathbf{u}^*$ with initial guess of $\mathbf{u}^0 = \mathbf{0}$. The coarse grid vector $\mathbf{u}^c$ can be computed as follows:
 \begin{align*}
 \mathbf{r}^f &= \mathbf{L}^f\mathbf{u}^* \\
 \mathbf{b}^c &= \mathbf{P}^T\mathbf{r}^f \\
@@ -318,3 +318,5 @@ If $\exists\mathbf{e}_{c}$ s.t. $\mathbf{e} = \mathbf{P}\mathbf{e}_c$:
  \end{align*}
  This concludes the proof.
 \end{proof}
+Lemma \ref{lemma:injection} states that though the $\mathbf{Q}$ defined above does not reflect the real process of acquiring the coarse grid correction, it is still a valid operator that project a fine vector $\mathbf{e}$ onto the range of the prolongation operator $\mathbf{P}$. The in the metrics $M_1$ and $M_2$, the inner product $<(\mathbf{I}-\mathbf{Q})\mathbf{e}, (\mathbf{I}-\mathbf{Q})\mathbf{e}>$ and $<\mathbf{L}(\mathbf{I}-\mathbf{Q})\mathbf{e}, (\mathbf{I}-\mathbf{Q})\mathbf{e}>$ measures how will the prolongation operator captures a given vector $\mathbf{e}$, either in $L^2$ norm or the energy norm $\mathbf{u}^T\mathbf{L}\mathbf{u}$. Note that if $\mathbf{e}$ can be captured by the coarse grid, both $M_1$ and $M_2$ are zero.  On the denominator $<\mathbf{L}\mathbf{e},\mathbf{e}>$ measures effectiveness of the smoother. In general, larger the energy norm of a vector is, more effective the smoother is. A simple example here: if $\mathbf{e}$ is one of the Eigen vector, the energy norm is square of the Eigen value associated with the Eigen vector. Therefore smaller $M_1$ and $M_2$ are, better the quality of prolongation is. So we can write the prolongation as a minimization problem:
+
