@@ -39,6 +39,14 @@ The continuous PDE of homogeneous Poisson can be written as:
 $$
 p(\mathbf{x}) = \alpha(\mathbf{x}) \text{ on } \Gamma_D\text{, } p_n(\mathbf{x}) = \beta(\mathbf{x}) \text{ on } \Gamma_N
 $$
+
+\begin{figure}[t]
+\includegraphics[width=4cm]{Poisson_Stencil}
+\centering
+\caption{A finite difference Poisson stencil on the boundary. White cells are interiors cell, i.e. they are degrees of freedom. Blue cell are Dirichlet condition, or essential conditions, that their value are prescribed. Grey cells are exterior cells that are not part of the domain $\Omega$. The face between gray and white cell describes a Nuemann condition, or a nature boundary.}
+\label{fig:PoissonBoundary}
+\end{figure}
+
 The finite difference discretization on a uniform grid of size $h$, samples points we denote as $\{i,j,k\} \in \mathcal{N}^3$ that corresponding to geometric location $\{ih,jh,kh\} \in \Omega$. The finite difference discretized operator for the interior can be written as:
 \begin{equation}
 \sum_{i',j',k'\in \mathcal{N}_{[i,j,k]}}\frac{p_{[i',j',k']}-p_{[i,j,k]}}{h^2} = f_{[i,j,k]}
@@ -51,12 +59,6 @@ $$
 \frac{\partial^2 p}{\partial x^2}(x_0) = \frac{p(x_0)-p(x_0)}{h^2} + O(h^2)
 $$
 As for boundary conditions, either Nuemann/nature boundary or Dirichlet/essential boundary, we can discretize the operator as shown in Figure ~\ref{fig:PoissonBoundary}. It is only 2nd order accurate, if the boundary condition is perfect aligned with cell. But generally multigrid is used as preconditioner. For that purpose, this discretization is proven to be sufficient for preconditioner even with non-cell align boundaries[\cite{aanjaneya2017power}]. 
-\begin{figure}[t]
-\includegraphics[width=4cm]{Poisson_Stencil}
-\centering
-\label{fig:PoissonBoundary}
-\caption{A finite difference Poisson stencil on the boundary. White cells are interiors cell, i.e. they are degrees of freedom. Blue cell are Dirichlet condition, or essential conditions, that their value are prescribed. Grey cells are exterior cells that are not part of the domain $\Omega$. The face between gray and white cell describes a Nuemann condition, or a nature boundary.}
-\end{figure}
 
 But even though we may assume that the boundary conditions are cell aligned at the finest level, this may not holds true for the coarse levels, when the cell size doubles. Figure ~\ref{fig:GeometricCoarsening} demonstrates the heuristic for coarsening boundary conditions. Note that after coarsening, the coarse level discretization may not be of the same order of accuracy to the continuous PDE as the finest level at the boundaries. This inconsistent boundary conditions break the principle that the each level of the multigrid hierarchy should be the discretization of the \textbf{same} continuous PDE. But to compensate this discrepancy, we can introduce additional boundary smoothing to stabilize the multigrid.
 \begin{figure}[t]
@@ -87,7 +89,7 @@ We can also write this in matrix form:
 $$
 \mathbf{P} = \begin{bmatrix}
 1 & 0 & 0 \\
-0.5 & 0.5 & 1 \\ 
+0.5 & 0.5 & 0 \\ 
 0 & 1 & 0 \\
 0 & 0.5 & 0.5 \\
 0 & 0 & 1
@@ -200,7 +202,13 @@ We have $\mathbf{L}\mathbf{v}_i = \lambda_i\mathbf{v}_i$, where$\lambda_i$ is th
   \begin{equation}
   \gamma^{k+1}_i = \gamma^k_i(1-\lambda_i)
   \end{equation}
-  That is, this smoother scales the error by each Eigen component by the amount of $1-\lambda_i$. That is it can only converge if $\lambda_i < 1, \forall \text{ Eigen values } \lambda_i$. Closer $\lambda_i$ is to $1$, faster that error mode is reduced. Other smoothers suppress Eigen modes differently, but in general, they follow the same principle: They are more effective in reducing error modes associated with larger Eigen values. Therefore the error modes with smaller Eigen values should be captured by the coarse grid. Intuitively, the smallest Eigen vector that is not projected onto the coarse grid will be the bottleneck of the convergence, and dictates the asymptotic convergence rate. Mathematically, this can be measured by two metrics[\cite{brezina2001algebraic}]: 
+  That is, this smoother scales the error by each Eigen component by the amount of $1-\lambda_i$. That is it can only converge if $\lambda_i < 1, \forall \text{ Eigen values } \lambda_i$. Closer $\lambda_i$ is to $1$, faster that error mode is reduced. Other smoothers suppress Eigen modes differently, but in general, they follow the same principle: They are more effective in reducing error modes associated with larger Eigen values. Therefore the error modes with smaller Eigen values should be captured by the coarse grid. Intuitively, the smallest Eigen vector that is not projected onto the coarse grid will be the bottleneck of the convergence, and dictates the asymptotic convergence rate. But the relation is not trivial. Given the coarse grid operator $L^c$ is a subspace of the fine grid operator $L^f$. If we can decompose an error vector $\mathbf{e}^f$ into two parts $\mathbf{e}^{fc}$, such that $\exists \mathbf{e}^{c}$, satisfies $\mathbf{P}\mathbf{e}^{c} = \mathbf{e}^{fc}$, and the remainder $\mathbf{e}^{ff} = \mathbf{e}^f - \mathbf{e}^{fc}$. i.e.:
+  $$
+  \mathbf{e}^f = \mathbf{e}^{fc} + \mathbf{e}^{ff}
+  $$
+ A good smoother in this case, would be able to effectively reduce error mode $\mathbf{e}^{ff}$,  even it may potentially increase error $\mathbf{e}^{fc}$. 
+\section{Convergence Metrics} 
+  To better quantify multigrid quality, mathematically, it can be measured by two metrics[\cite{brezina2001algebraic}]: 
 \begin{equation}
 \label{equ:M1}
 M_1(\mathbf{Q},\mathbf{e}) := \frac{<(\mathbf{I}-\mathbf{Q})\mathbf{e}, (\mathbf{I}-\mathbf{Q})\mathbf{e}>}{<\mathbf{L}\mathbf{e},\mathbf{e}>}
@@ -209,7 +217,11 @@ M_1(\mathbf{Q},\mathbf{e}) := \frac{<(\mathbf{I}-\mathbf{Q})\mathbf{e}, (\mathbf
 \label{equ:M2}
 M_2(\mathbf{Q},\mathbf{e}) := \frac{<\mathbf{L}(\mathbf{I}-\mathbf{Q})\mathbf{e}, (\mathbf{I}-\mathbf{Q})\mathbf{e}>}{<\mathbf{L}\mathbf{e},\mathbf{e}>}
 \end{equation}
-$M_2$ is used in work [\cite{mccormick1984multigrid},\cite{mccormick1982multigrid},\cite{mccormick1985multigrid}]. $M_1$ is introduced in [\cite{brandt1986algebraic}]. The metric measures how well the prolongation operator is for a given error $\mathbf{e}$. But we have not defined $\mathbf{Q}$ yet. Here is the definition: 
+$M_2$ is used in work [\cite{mccormick1984multigrid},\cite{mccormick1982multigrid},\cite{mccormick1985multigrid}]. $M_1$ is introduced in [\cite{brandt1986algebraic}]. The metric measures how well the prolongation operator is for a given error $\mathbf{e}$. $\mathbf{Q}$ is a projection operator that projects a fine vector $\mathbf{e}^f$ onto a subspace that can be resolved by the coarse grid, $\mathbf{e}^{fc}$. 
+$$
+\mathbf{e}^{fc} = \mathbf{Q}\mathbf{e}^f
+$$
+Here is the formal definition: 
 \begin{equation}
 \mathbf{Q} = \mathbf{P}\mathbf{R}
 \end{equation}
@@ -251,7 +263,7 @@ But unfortunately, using this definition of $\mathbf{R}$ for analysis often is t
 \end{equation}
 There $\mathbf{R}$ is a simple injection. That is with value $1$, where the coarse node and fine node coincide in space, i.e. $\mathbf{X}^f_j = \mathbf{X}^c_i$, where $\mathbf{X}^f_j$ is the spacial location of fine node j and $\mathbf{X}^c_i$ is the spacial location of coarse node i.
 
-\begin{lem}\label{lemma:injection}The injection based $\mathbf{R}$ creates a valid projective $\mathbf{Q}$ that satisfies Equation \ref{equ:projection_Q}.\end{lem}
+\begin{lem}\label{lemma:injection}The injection based $\mathbf{R}$ creates a valid projection $\mathbf{Q}$ that satisfies Equation \ref{equ:projection_Q}.\end{lem}
 \begin{proof}
 We can rearrange the fine DOF such that fine DOF that does not spatially coincide with any coarse node first, then those that coincide with coarse node after. We can write the fine vector $\mathbf{e}$ as:
 \begin{equation*}
@@ -319,4 +331,7 @@ If $\exists\mathbf{e}_{c}$ s.t. $\mathbf{e} = \mathbf{P}\mathbf{e}_c$:
  This concludes the proof.
 \end{proof}
 Lemma \ref{lemma:injection} states that though the $\mathbf{Q}$ defined above does not reflect the real process of acquiring the coarse grid correction, it is still a valid operator that project a fine vector $\mathbf{e}$ onto the range of the prolongation operator $\mathbf{P}$. The in the metrics $M_1$ and $M_2$, the inner product $<(\mathbf{I}-\mathbf{Q})\mathbf{e}, (\mathbf{I}-\mathbf{Q})\mathbf{e}>$ and $<\mathbf{L}(\mathbf{I}-\mathbf{Q})\mathbf{e}, (\mathbf{I}-\mathbf{Q})\mathbf{e}>$ measures how will the prolongation operator captures a given vector $\mathbf{e}$, either in $L^2$ norm or the energy norm $\mathbf{u}^T\mathbf{L}\mathbf{u}$. Note that if $\mathbf{e}$ can be captured by the coarse grid, both $M_1$ and $M_2$ are zero.  On the denominator $<\mathbf{L}\mathbf{e},\mathbf{e}>$ measures effectiveness of the smoother. In general, larger the energy norm of a vector is, more effective the smoother is. A simple example here: if $\mathbf{e}$ is one of the Eigen vector, the energy norm is square of the Eigen value associated with the Eigen vector. Therefore smaller $M_1$ and $M_2$ are, better the quality of prolongation is. So we can write the prolongation as a minimization problem:
-
+\begin{equation}
+\operatorname*{argmin}_{\mathbf{P}} \operatorname*{max}_{\mathbf{e}}M_i(\mathbf{P},\mathbf{e})\text{, }||\mathbf{e}||_2 = 1
+\end{equation}
+Here $i$ can be either $1$ or $2$ depends on which metric is used. But in reality other constraints will need to be imposed on $\mathbf{P}$ to limit its sparsity and the sparsity of a coarse level operator. In chapter \ref{Chapter:BBMG}, the construction of the prolongation $\mathbf{P}$ operator will be explored under the context of FEM discretized linear elasticity. But let's first examine how can we deploy multigrid onto modern hardware.
