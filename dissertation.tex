@@ -18,12 +18,20 @@
 
 %%% You'll want ``oneside'' for the deposit version, but probably not for any versions that don't need to meet the UW requirements
 \documentclass[12pt,oneside,letterpaper]{memoir}
+\usepackage{wrapfig}
+\usepackage[percent]{overpic}
 \usepackage{color}
 \usepackage{caption}
 \usepackage{subcaption}
 \usepackage{amsthm}
+\usepackage{amsmath}
 \usepackage[chapter]{algorithm}
+\usepackage{tikz}
+\usepackage{changebar}
+\usepackage{adjustbox}
 \usepackage{algorithmic}
+
+\usetikzlibrary{decorations.pathreplacing}
 \theoremstyle{plain}
 \newtheorem{thmN}{Theorem}[chapter] % reset theorem numbering for each chapter
 \newtheorem{lem}[thmN]{Lemma}
@@ -32,7 +40,16 @@
 \newtheorem{defn}[thmN]{Definition} % definition numbers are dependent on theorem numbers
 \newtheorem{exmp}[thmN]{Example} % same for example numbers
 
+% customising the new block
+\newcommand{\varA}[1]{{\operatorname{#1}}}
+\newcommand{\varB}[1]{{\operatorname{\mathit{#1}}}}
+\newcommand{\tikzmark}[1]{\tikz[overlay,remember picture,baseline=(#1.base)]
+  \node (#1) {\strut};}
+  
+\newcommand{\removed}[1]{} % non-markup version
+
 \input{includes/preamble}
+
 \input{includes/defs}
 \input{includes/thesisdefs}
 \svnidlong{$LastChangedBy$}{$LastChangedRevision$}{$LastChangedDate$}{$HeadURL: http://freevariable.com/dissertation/branches/diss-template/dissertation.tex $} 
@@ -40,7 +57,7 @@
 \graphicspath{ {./images/} }
 \clearpage\pagenumbering{roman}  % This makes the page numbers Roman (i, ii, etc)
 
-\title{Efficient Solver }
+\title{Designing Efficient Solvers for Large Scale Physics Simulation}
 \author{Haixiang Liu}
 \department{Computer Sciences}
 
@@ -52,11 +69,9 @@
 %%% explicitly cite, but that should be in the final bibliography:
 % \nocite{*}
 
-\ifpdf
+
 \DeclareGraphicsExtensions{.pdf, .jpg, .tif, .png}
-\else
-\DeclareGraphicsExtensions{.eps, .jpg, .png}
-\fi
+
 
 \maketitle
 
@@ -68,6 +83,8 @@
 %% Now include the tex files for each chapter, like so (I put these in separate dirs): 
 \include{intro/intro}
 \include{Chapter_Solver/solver}
+\include{Chapter_DD/DD}
+\include{Chapter_TopOpt/TopOpt}
 % \include{motivation/motivation}
 % \include{related/related}
 

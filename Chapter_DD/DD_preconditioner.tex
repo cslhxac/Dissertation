@@ -1,0 +1,82 @@
+\section{A Schur-complement preconditioner}
+\label{sec:schur-complement-preconditioner}
+
+In light of the challenges detailed in section~\ref{sec:dd-fundamentals} we propose certain strategic simplifications that would make the Schur complement method
+yield an approximate solver of the Poisson equation, rather than a strictly accurate one. Our intent would be to use this approximation as a preconditioner for the
+Conjugate Gradients method, applied to the full-scale Poisson problem. Our last transformation of the factorized form for $A^{-1}$, captured in equation
+(\ref{eqn:factorization-k-subdomains-approx-five}) was precisely intended to facilitate this process. We can easily show that any \emph{nonsingular} approximation
+$A_{ii}^\dagger\approx A_{ii}^{-1}$ of the subdomain inverses, combined with a \emph{symmetric positive definite (SPD)} approximation $\Sigma^\dagger\approx\Sigma^{-1}$
+will produce, after substitution in equation
+(\ref{eqn:factorization-k-subdomains-approx-five}), a symmetric and positive definite matrix approximation to
+$A^{-1}$. Thus multiplication with this expression can be used as a preconditioner for the Conjugate Gradients method.
+% We will design these approximations so that
+%they offer the best approximation that can be afforded while being highly suitable for parallel implementation on a heterogeneous computing platform.  
+
+%To cater to the observations made in section~\ref{sec:dd-fundamentals},
+%we pursue instead to create the approximate inverse shown in equation (\ref{eqn:factorization-k-subdomains-approx-five}) which can be used as a high efficiency preconditioner for a
+%Krylov subspace method such as conjugate gradients.
+%Here, $A_{ii}^\dagger$ is an approximation to $A_{ii}^\varA{-1}$, for
+%$i\in\{1,\ldots,k\}$, and $\Sigma^\dagger$ is an approximation to $\Sigma^\varA{-1}$.
+%The only restriction imposed on this matrix to be used as a preconditioner is
+%that $A_{11}^\dagger,\ldots,A_{kk}^\dagger,\Sigma^\dagger$ should be symmetric
+%and positive-definite, which would guarantee that the entire preconditioner is
+%symmetric and positive-definite.
+
+From an implementation standpoint, we map the application of this preconditioner to a heterogeneous platform by assigning the interior degrees of freedom of each
+subdomain $\Omega_i$ to a single GPU or Many-Core accelerator card, while the interface degrees of freedom ($\Gamma$) will be the maintained on the CPU. We design
+the approximate subdomain inverses $A_{ii}^\dagger$ so that they can be multiplied with respective vectors exclusively on the GPU, local to the accelerator that owns
+the subdomain $\Omega_i$. Multiplication with the matrix blocks $A_{\Gamma i}$ will coincide with data transfer from the card that owns $\Omega_i$ to the CPU, while
+multiplication with the transpose $A_{i\Gamma}$ will relay data from the CPU to the respective accelerator in the opposite direction. Multiplication with the
+approximate inverse of the Schur complement, i.e. $\Sigma^\dagger$, will be handled fully on the CPU. The application of this preconditioner is formalized in
+pseudocode in Algorithm 1.  
+
+%Our intent is to apply this preconditioner in a distributed fashion using both
+%CPU and available GPUs on our system. In the context of the conjugate
+%gradient method, the factorization in equation (\ref{eqn:factorization-k-subdomains-approx-five})
+%is never required to be computed explicitly, only its action
+%$(z_1,\ldots,z_k,z_\Gamma)^T$ is needed on the residual vector $(r_1,\ldots,r_k,r_\Gamma)^T$.
+%The spirit of our method is to perform all computations associated with
+%$A_{ii}^\dagger$ on the GPU, those associated with $\Sigma^\dagger$
+%on the CPU, and the operators $A_{i\Gamma},A_{\Gamma i}$ are emulated
+%by transfer operations from the CPU to the GPU, where $i\in\{1,\ldots,k\}$.
+%Algorithm~\ref{alg:apply-preconditioner} illustrates the implementation.
+
+\begin{algorithm}{h}
+\caption{Preconditioner application $\boldsymbol{z}=A^\dagger\boldsymbol{r}$, from eqn. (\ref{eqn:factorization-k-subdomains-approx-five})}
+\label{alg:apply-preconditioner}
+\begin{algorithmic}[1]
+\FOR{$i=1\ldots k$}
+\STATE\COMMENT{In parallel, on GPU}
+\STATE {Get $r_i\leftarrow$ CPU}
+\STATE {Solve $q_i\leftarrow A_{ii}^\dagger r_i$}
+\STATE {Compute $s_\Gamma^{(i)}\leftarrow -A_{\Gamma i}q_i$}
+\STATE {Send $s_\Gamma^{(i)}\rightarrow$ CPU}
+\STATE {Send $q_i\rightarrow$ CPU}
+\ENDFOR
+\STATE Compute $f_\Gamma=r_\Gamma+s_\Gamma^{(1)}+\ldots+s_\Gamma^{(k)}$\COMMENT{on CPU}
+\STATE Solve $z_\Gamma\leftarrow\Sigma^\dagger f_\Gamma$
+\FOR{$i=1\ldots k$}
+\STATE\COMMENT{In parallel, on GPU}
+\STATE {Get $q_i\leftarrow$ CPU}
+\STATE Get $z_\Gamma\leftarrow$ CPU
+\STATE Compute $f_i\leftarrow -A_{i\Gamma}z_\Gamma$
+\STATE Solve $z_i\leftarrow A_{ii}^\dagger f_i$
+\STATE Add $z_i+=q_i$
+\STATE {Send $z_i\rightarrow$ CPU}
+\ENDFOR
+\end{algorithmic}
+\end{algorithm}
+
+\subsection{Multigrid subdomain solver}
+
+For approximating $A_{ii}^\dagger$ in the formulation described above, we use a simple, voxel-accurate multigrid solver in the spirit
+similar to prior works
+\cite{mcadams2010parallel,Molemaker:2008:LowViscosityFlow},
+with some embellishments to support sparsely populated domains as
+discussed in section \ref{sec:implementation-details}. The multigrid hierarchy is constructed by classifying every grid
+cell as ``interior'', ``exterior'' (to the active domain) or ``Dirichlet'', and coarsening this classification to voxels of lower resolution grids. Trilinear
+transfer operators and a damped Jacobi smoother are employed, with an additional
+smoothing effort devoted to a narrow band around the boundary (3-7
+iterations) for each interior smoothing pass.
+
+
