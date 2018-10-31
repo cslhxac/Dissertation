@@ -1,0 +1,37 @@
+\section{Multigrid Solver Validation}\label{sec:topopt_result}
+
+Algorithmically, our implementation of the solver is a standard multi-linearly interpolated Garlerkin-coarsened Multigrid preconditioned conjugate gradient method. At early topology optimization iterations or small domains, such method proves to have fast asymptotic convergence. But in our examples, especially the bird beak Figure \ref{fig:beak} and the wing Figure \ref{fig:wing}, the high variation of material spatial distribution has challenged the convergence of the multigrid solver as shown by Figure \ref{fig:convergence_bird} (left). Thiner features resulted from Higher resolution, can significantly impact the convergence of multigrid as indicated in Figure \ref{fig:convergence_bird} (right).
+\begin{figure}[t]
+\includegraphics[width=1\linewidth]{images/TopOpt/Convergence_test}	
+\caption{(Left) Convergence comparison of the bird beak example of different resolutions at the last topology optimization iteration.  (Right) Convergence comparison of the one-billion-voxel bird beak example at different topology optimization iterations. All residuals reported in this work are $L_{\infty}$ norm across all active cells, normalized relative to the $L_{\infty}$ norm of the load.}
+\label{fig:convergence_bird}
+\end{figure}
+
+Besides convergence, the high resolution has also pushed the numerical limited of floating point. To validate our mixed precision scheme, we have conducted the following tests, both on analytical structures and the structures naturally emerged from topology optimization: 1. The last iteration of the bird beak example; 2. The last iteration of the wing example; 3-8. Homogeneous and isotropic cantilever beams of different length with one side fixed and the other side loaded with a uniform downward force. 
+
+
+Table \ref{tab:mix_precision} shows the final residual of five different precision schemes: 1. Full double precision; 2. Only solution vector and computation are in double precision, the mix precision scheme we used in our topology optimization; 3. Only solution vector is in double precision; 4. Only computation is in double precision; 5. All in float precision. The results shows that under all examples our proposed mix precision scheme(column 2) can reduce the residual to an order of magnitude close to the double precision. Due to the fact that at high resolutions, cells that are far from Dirichlet boundaries have large displacements but yet only small strains. This loss of precision leaves it insufficient to use single precision for the solution vector. As shown in (column 4 and 5), using single precision for solution can result in inaccurate computation of strain and final residual. Similarly, using single-precision multiply will not be able to compute search direction to sufficient accuracy, conjugate gradient, in this case, will halt due to a detected singularity (column 3 and 5). 
+
+\newpage
+\begin{table*}
+\centering
+\tiny
+\caption{The final residuals of different precision scheme after the same number of iterations. Test cases include bird beak, plane wing, and cantilever beam (CB) with different resolutions. The final residuals are recomputed based on solution vectors. All tests are scaled to initial residual infinity norm of 1. From the left to right, the 5 schemes are: 1. Full double precision; 2. Only solution vector and computation are in double precision; 3. Only solution vector is in double precision; 4. Only computation is in double precision; 5. All in float precision. SINGULAR indicates conjugate gradients have halted due to detected singularity.}
+{
+\begin{tabularx}{.95\linewidth}{l@{\hskip3.5pt}lXXXXX}
+\toprule
+	Example			& Double Precision 	& Mix Precision	\newline (double multiply) 	& Mix Precision \newline (single multiply) & Single Precision \newline (double multiply) & Single Precision \newline (single multiply) \\
+  	\midrule
+	Bird beak	& 	9.192e-5	& 	9.063e-5	& 	1.969e-4 	& 	6.846e+0 	&	7.611e+0 	\\
+    Wing		&	8.968e-5	&	1.815e-4	&	SINGULAR	&	1.850e+1	& 	SINGULAR	\\
+    CB (32x32x32)	&	7.942e-6	&	7.942e-6	& 5.827e-5	& 2.259e-5	&	5.827e-5	\\
+    CB (32x32x64)	&	8.217e-6	&	8.218e-6	& 5.773e-5	& 4.905e-5	&	6.019e-5	\\
+    CB (32x32x128)	&	8.207e-6	&	8.208e-6	& 1.041e-3	& 1.018e-4	&	1.041e-3	\\
+    CB (32x32x256)	&	9.322e-6	&	9.321e-6	& 6.295e-3	& 1.934e-4	&	6.295e-3	\\
+    CB (32x32x512)	&	4.506e-6	&	4.508e-6	& SINGULAR	& 3.990e-4	&	SINGULAR	\\
+    CB (32x32x1024)&	5.237e-6	&	5.242e-6	& SINGULAR	& 7.043e-4	&	SINGULAR	\\
+    \midrule
+\end{tabularx}
+}
+\label{tab:mix_precision}
+\end{table*}

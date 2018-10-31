@@ -1,0 +1,6 @@
+\chapter{Stencil Aware Galerkin Coarsened Multigrid for Linear Elasticity} 
+\label{Chapter:BBMG}
+In Chapter~\ref{Chapter:Elasticity}, we have examined an efficient implementation of a standard multilinear Galerkin coarsened multigrid preconditioned conjugate gradient algorithm for linear elasticity. In figure~\ref{fig:convergence_bird}, we have observed that with the increasing of resolution (left), and domain complexity(right). The MGPCG convergence is severely impaired. In this chapter, as a continuation to  Chapter~\ref{Chapter:Solver}, we will examine the design of a stencil aware Galerkin coarsened multigrid and its efficacy when solving complex domains in comparison to multilinear interpolated Galerkin coarsened multigrid.
+\input{Chapter_BBMG/BBMG_Local_Problem}
+\input{Chapter_BBMG/BBMG_Aux}
+\input{Chapter_BBMG/BBMG_Aux_3D}

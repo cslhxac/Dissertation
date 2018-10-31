@@ -1,3 +1,9 @@
 \chapter{Narrow-Band Topology Optimization on a Sparsely Populated Grid} 
 \label{Chapter:Elasticity}
+In the context of designing efficient solver, topology optimization, as an application, creates very interesting challenges to the numerical solvers. It desires high resolution, for many interesting details only emerges in high resolution simulation. It generates sparse domain, as in many scenarios only a fraction($<5\%$) of domain is filled in the final solution. It also creates high contrast ($1:10^{-9}$) material distributions. 
 
+In this chapter, I present a design of efficient linear elasticity solver that is tailored for high resolution and sparse domain. Regarding the high contrast material distribution, I will demonstrate how it impairs the multi-linear multigrid solver's convergence rate, which inspired a design of stencil-aware interpolation scheme that drastically improves convergence rate in those situations.
+\input{Chapter_TopOpt/TopOpt_fundamentals}
+\input{Chapter_TopOpt/TopOpt_overview}
+\input{Chapter_TopOpt/TopOpt_multigrid}
+\input{Chapter_TopOpt/TopOpt_result}

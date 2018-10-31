@@ -71,19 +71,20 @@ But even though we may assume that the boundary conditions are cell aligned at t
   \centering
   \includegraphics[width=.8\linewidth]{Nuemann_Coarsening}
 \end{minipage}
-  \caption{Geometric coarsening of the simulation domain. Left: if one of the cells is Dirichlet cell, we will coarsen it as Dirichlet cell at the coarse level, Right: otherwise if one of the cells is interior cell, we will coarsen it as interior cell at the coarse level}
+  \caption{Geometric coarsening of the simulation domain. Left: if one of the cells is Dirichlet cell, we will coarsen it as Dirichlet cell at the coarse level, Right: otherwise if one of the cells is interior cell, it is coarsened as an interior cell at the coarse level.}
   \label{fig:GeometricCoarsening}
 \end{figure}
 \section{Garlerkin Coarsening}
 Galerkin coarsening, also sometimes refers to algebraic coarsening, is usually the preferred method for handling complex geometries or heterogeneous domains. It was summarized in work [\cite{brandt1986algebraic}]. Many algebraic algorithms, assumes only the top level linear operator is available in matrix form. In such case, the first step of the algorithm is to select the coarse grid DOF based on the matrix given. In this dissertation, we choose the coarsened DOF the same way as in geometric multigrid, that is, coarse DOF coincide with every other fine DOF in each dimension. If readers are interested in the coarse grid selection, I will direct to work [\cite{vanvek1996algebraic},\cite{brandt1986algebraic},\cite{griebel2003algebraic}].
 
-After the coarse grid selection, a \textbf{prolongation} operator is constructed. It is a linear operator that interpolates fine DOF values from coarse DOF. The most common prolongation operator is multi-linear interpolation. In 1D, it can be illustrated as Figure~\ref{fig:MultilinearInterpolation}.
 \begin{figure}[t]
 \centering
 \includegraphics[width=6cm]{Interpolation}
   \caption{Multilinear prolongation operator in 1D. The value from corresponding fine nodes is copied from the coarse node, it they coincide in the domain, otherwise the fine node value is interpolated from the two closest coarse nodes each with weight 0.5.}
   \label{fig:MultilinearInterpolation}
 \end{figure}
+
+After the coarse grid selection, a \textbf{prolongation} operator is constructed. It is a linear operator that interpolates fine DOF values from coarse DOF. The most common prolongation operator is multi-linear interpolation. In 1D, it can be illustrated as Figure~\ref{fig:MultilinearInterpolation}.
 
 We can also write this in matrix form:
 $$
@@ -208,6 +209,7 @@ We have $\mathbf{L}\mathbf{v}_i = \lambda_i\mathbf{v}_i$, where$\lambda_i$ is th
   $$
  A good smoother in this case, would be able to effectively reduce error mode $\mathbf{e}^{ff}$,  even it may potentially increase error $\mathbf{e}^{fc}$. 
 \section{Convergence Metrics} 
+\label{sec:Convergence_Metric}
   To better quantify multigrid quality, mathematically, it can be measured by two metrics[\cite{brezina2001algebraic}]: 
 \begin{equation}
 \label{equ:M1}
@@ -217,7 +219,7 @@ M_1(\mathbf{Q},\mathbf{e}) := \frac{<(\mathbf{I}-\mathbf{Q})\mathbf{e}, (\mathbf
 \label{equ:M2}
 M_2(\mathbf{Q},\mathbf{e}) := \frac{<\mathbf{L}(\mathbf{I}-\mathbf{Q})\mathbf{e}, (\mathbf{I}-\mathbf{Q})\mathbf{e}>}{<\mathbf{L}\mathbf{e},\mathbf{e}>}
 \end{equation}
-$M_2$ is used in work [\cite{mccormick1984multigrid},\cite{mccormick1982multigrid},\cite{mccormick1985multigrid}]. $M_1$ is introduced in [\cite{brandt1986algebraic}]. The metric measures how well the prolongation operator is for a given error $\mathbf{e}$. $\mathbf{Q}$ is a projection operator that projects a fine vector $\mathbf{e}^f$ onto a subspace that can be resolved by the coarse grid, $\mathbf{e}^{fc}$. 
+$M_2$ is used in work by \cite{mccormick1984multigrid}, \cite{mccormick1982multigrid}, \cite{mccormick1985multigrid}. $M_1$ is introduced by \cite{brandt1986algebraic}. The metric measures how well the prolongation operator is for a given error $\mathbf{e}$. $\mathbf{Q}$ is a projection operator that projects a fine vector $\mathbf{e}^f$ onto a subspace that can be resolved by the coarse grid, $\mathbf{e}^{fc}$. 
 $$
 \mathbf{e}^{fc} = \mathbf{Q}\mathbf{e}^f
 $$
@@ -253,7 +255,7 @@ We can see that
 \begin{equation}\label{equ:projection_Q}
 (\mathbf{I} - \mathbf{Q})\mathbf{e}^f = \mathbf{0}\text{, if $\exists$ $\mathbf{e}^c$, s.t. }\mathbf{e}^f = \mathbf{P}\mathbf{e}^c
 \end{equation}
-But unfortunately, using this definition of $\mathbf{R}$ for analysis often is too computationally complex as it requires the inversion of the coarse level operator $(\mathbf{L}^c)^{-1}$. Therefore in work [\cite{brezina2001algebraic}], an alternative definition of $\mathbf{R}$ is used:
+But unfortunately, using this definition of $\mathbf{R}$ for analysis often is too computationally complex as it requires the inversion of the coarse level operator $(\mathbf{L}^c)^{-1}$. Therefore, in work by \cite{brezina2001algebraic}, an alternative definition of $\mathbf{R}$ is used:
 \begin{equation}
 \mathbf{R}_{ij} = \left\{  
 \begin{aligned}

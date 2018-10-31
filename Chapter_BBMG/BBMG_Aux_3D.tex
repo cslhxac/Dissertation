@@ -1,0 +1,45 @@
+\section{Rotational Degrees of Freedom in 3D}
+Fine nodes in 3D can be categorized into 4 types as stated in section~\ref{sec:p_sparsity}:
+\begin{enumerate}
+\item coincide with a coarse node
+\item lies on a coarse cell edge center
+\item lies on a coarse cell face center
+\item lies on a coarse cell cell center
+\end{enumerate}
+For case 1 and case 4, the expressions for computing prolongation operator are identical for 2D and 3D. I will focus case 2 and 3, as they are similar to 2D and yet require special treatment. 
+\subsection{Interpolating Fine Nodes that Lies on a Coarse Cell Edge Center}
+The prolongation operator can be computed with the same formula as equation~\ref{equ:edge_P_2D} as in the 2D case, but the rearrangement of the local matrix is different. Consider a one ring neighborhood of a fine node $i$, $\mathcal{N}_i$ that contains 26 nodes. Without loss of generosity, we assume node $i$ lies on a coarse node edge aligned with the x axis. Therefore if the node $i$ has geometric index $(x_i, y_i, z_i)$ in the Cartesian grid. We are interpolating its value from node $c_1$ with geometric $(x_i - 1, y_i, z_i)$ and node $c_2$ with geometric $(x_i + 1, y_i, z_i)$. If we denote the DOF of the coarse nodes are:
+$$
+\mathbf{u}^c = \left(\begin{array}{c}u_x\\u_y\\u_z\\r_x\\r_y\\r_z\end{array}\right)
+$$
+$\mathbf{u}^c_1$ is the vector of nodal values for node $c_1$ and $\mathbf{u}^c_2$ is the vector of nodal values for node $c_2$. The fine node DOF at geometric index $(x_i - 1, y_i, z_i)$ and $(x_i + 1, y_i, z_i)$ is then computed my injection:
+ \begin{equation}
+ \mathbf{u}^f(x_i - 1, y_i, z_i) = \begin{bmatrix} 
+ 1 & 0 & 0 & 0 & 0 & 0\\
+ 0 & 1 & 0 & 0 & 0 & 0\\
+ 0 & 0 & 1 & 0 & 0 & 0 \end{bmatrix} \mathbf{u}^c_1
+ \end{equation}
+ Similarly $\mathbf{u}^f(x_i + 1, y_i, z_i)$ can be computed. Now regarding the rotational DOF of a given coarse node, they influence only the fine nodes in $\mathcal{N}_i$ that are connected to the coarse node through an edge and that is not the center fine node $i$. For instance, rotational DOF of node located at coarse node $c_1$ with geometric index $(x_i + 1, y_i, z_i)$, influence the following $4$ fine nodes in $\mathcal{N}_i$.
+ \begin{equation}
+ \mathcal{R}_1 = \{(x_i - 1, y_i+1, z_i),(x_i - 1, y_i-1, z_i),(x_i - 1, y_i, z_i+1), (x_i - 1, y_i, z_i-1)\}
+ \end{equation}
+$\mathcal{R}_1$ is the set of nodes influence by rotational DOF of node $c_1$. Similarly we can define $\mathcal{R}_2$. Given the symmetry, without loss of generality, pick node $(x_i - 1, y_i - 1, z_i)$ as an example we can set its nodal value in the local problem as. The vector between the node $(x_i - 1, y_i, z_i)$ and $(x_i - 1, y_i - 1, z_i)$ is $(0,-h,0)$. Again $h$ here is the cell size. If the rotational DOF are $(r_x,r_y,r_z)$. Then we can write the linearized rotational matrix as:
+\begin{equation}
+\mathbf{R}^c_1 = \begin{bmatrix} 
+0 & -r_z & r_y\\
+r_z & 0 & -r_x \\
+-r_y & r_x & r_z
+\end{bmatrix}
+\end{equation}
+Then displacement of node $(x_i - 1, y_i - 1, z_i)$ caused by the rotation around the coarse node is then:
+\begin{equation}
+\mathbf{R}^c_1  \left[\begin{array}{c} 0\\-h\\0\end{array}\right] = \left[\begin{array}{c} hr_z\\0\\-hr_x\end{array}\right]
+\end{equation}
+Here the $2$nd dimension of the displacement is not influence by the rotation of the coarse node. Therefore we set it as an free variable. Now we can write the displacement of node $(x_i - 1, y_i - 1, z_i)$ on the fine grid as:
+ \begin{equation}
+ \mathbf{u}^f(x_i - 1, y_i, z_i) = \begin{bmatrix} 
+ 1 & 0 & 0 & 0 & h & 0\\
+ * & * & * & * & * & *\\
+ 0 & 0 & 1 & 0 & -h & 0 \end{bmatrix} \mathbf{u}^c_1
+ \end{equation}
+ $*$ here means that DOF is set to be a free variable. Now that we have prescribed a selection of fine node DOF in the local problem, we can rearrange the local matrix $\mathbf{L}_i$ similar to equation~\ref{equ:matrix_split}, and compute the prolongation operator similar to equation~\ref{equ:edge_P_2D}.
