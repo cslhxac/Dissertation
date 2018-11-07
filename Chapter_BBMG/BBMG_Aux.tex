@@ -19,37 +19,41 @@ $$
 The superscript $^c$ here indicates the DOF live on the coarse grid. Accordingly, the fine DOF of nodes \textit{LT}, \textit{L}, and \textit{LB}, then can be computed accordingly:
 \begin{align*}
  \mathbf{u}^f_{LT} &= \left(\begin{array}{c} u^c_L(x) - u^c_L(\theta)h \\ * \end{array}\right) \\
- \mathbf{u}^f_{LT} &= \left(\begin{array}{c} u^c_L(x) \\ u^c_L(y) \end{array}\right) \\
+ \mathbf{u}^f_{L} &= \left(\begin{array}{c} u^c_L(x) \\ u^c_L(y) \end{array}\right) \\
  \mathbf{u}^f_{LB} &= \left(\begin{array}{c} u^c_L(x) + u^c_L(\theta)h \\ * \end{array}\right) 
 \end{align*}
 $h$ is the cell width. The symbol $*$ indicates that this DOF is not fixed for the local problem for interpolating the fine grid node values $\mathbf{u}^f_{C}$. Similarly we can write the right side nodal values as:
 \begin{align*}
  \mathbf{u}^f_{RT} &= \left(\begin{array}{c} u^c_R(x) - u^c_R(\theta)h \\ * \end{array}\right) \\
- \mathbf{u}^f_{RT} &= \left(\begin{array}{c} u^c_R(x) \\ u^c_R(y) \end{array}\right) \\
+ \mathbf{u}^f_{R} &= \left(\begin{array}{c} u^c_R(x) \\ u^c_R(y) \end{array}\right) \\
  \mathbf{u}^f_{RB} &= \left(\begin{array}{c} u^c_R(x) + u^c_R(\theta)h \\ * \end{array}\right) 
 \end{align*}
-So if we rearrange the local matrix in equation~\ref{equ:local_matrix}, so that nodal values $\mathbf{u}^f_{C}$ first, then the other undetermined nodal values, and last, the eight determined nodal values we write as vector $\mathbf{u}^c$: 
+So if we rearrange the local matrix in equation~\ref{equ:local_matrix}, so that nodal values $\mathbf{u}^f_{C}$ first, then the other undetermined(or free) nodal values, and last, the eight determined nodal values we write as vector $\mathbf{u}^f_{D}$: 
 $$
-\mathbf{u}^c = \left(\mathbf{u}^f_{LT}(x), \mathbf{u}^f_{LT}(x), \mathbf{u}^f_{LT}(y), \mathbf{u}^f_{LB}(y),\mathbf{u}^f_{RT}(x), \mathbf{u}^f_{RT}(x), \mathbf{u}^f_{RT}(y), \mathbf{u}^f_{RB}(y)\right)
+\mathbf{u}^f_{D} = \left(\mathbf{u}^f_{LT}(x), \mathbf{u}^f_{LT}(x), \mathbf{u}^f_{LT}(y), \mathbf{u}^f_{LB}(y),\mathbf{u}^f_{RT}(x), \mathbf{u}^f_{RT}(x), \mathbf{u}^f_{RT}(y), \mathbf{u}^f_{RB}(y)\right)
 $$
 We denote the rearranged local matrix as: 
  \begin{equation}
  \label{equ:matrix_split}
 \mathbf{L}_i = \begin{bmatrix} 
-\mathbf{L}_{ff} & \mathbf{L}_{fc} \\
-\mathbf{L}_{cf} & \mathbf{L}_{cc}
+\mathbf{L}_{ff} & \mathbf{L}_{fd} \\
+\mathbf{L}_{df} & \mathbf{L}_{dd}
 \end{bmatrix}
 \end{equation}
- Here $\mathbf{L}_{cc}$ is a $8\times8$ matrix, $\mathbf{L}_{ff}$ is of dimension $10\times10$. Based on theorem~\ref{theo:p_solution}, the fine nodal value vector $\mathbf{u}^f$ of size $10$ can than be computed as:
+ Here $\mathbf{L}_{dd}$ is a $8\times8$ matrix, $\mathbf{L}_{ff}$ is of dimension $10\times10$. Based on theorem~\ref{theo:p_solution}, the free fine nodal DOF vector $\mathbf{u}^f$ of size $10$ can than be computed as:
  \begin{equation}
- \mathbf{u}^f = -(\mathbf{L}_{ff})^{-1}\mathbf{L}_{fc}\mathbf{u}^c
+ \mathbf{u}^f = -(\mathbf{L}_{ff})^{-1}\mathbf{L}_{fc}\mathbf{u}^f_D
  \end{equation} 
-The local prolongation operator $\mathbf{P}_i$ is therefore:
+ Given that each component in vector $\mathbf{u}^f_{D}$ can be computed from $\mathbf{u}^c_L$ and $\mathbf{u}^c_R$ using a linear transformation. We can construct a transformation matrix $T$, s.t.:
+   \begin{equation}
+   \mathbf{u}^f_D = \mathbf{T} \mathbf{u}^c
+   \end{equation}
+   The local prolongation operator is therefore:
  \begin{equation}
- \mathbf{P}_i = -(\mathbf{L}_{ff})^{-1}\mathbf{L}_{fc}
+ \mathbf{P}_i = -(\mathbf{L}_{ff})^{-1}\mathbf{L}_{fd}\mathbf{T}
  \label{equ:edge_P_2D}
  \end{equation}
-As we are using $\mathbf{L}_i$ instead of $\mathbf{L}^2_i$, our local convergence metric is therefore $M_{1,q}$. 
+The first two rows of  $\mathbf{P}_i$ is the prolongation operator for the fine node $i$. By using $\mathbf{L}_i$ instead of $\mathbf{L}^2_i$, our local convergence metric is therefore $M_{1,q}$. 
 \subsection{Interpolation of Cell Centered Nodes in 2D}
 Now that, we have interpolated the fine nodes that are aligned with the coarse cell edges. The next step is interpolating the fine nodes that are located in the center of the coarse cells, Figure~\ref{fig:embedded_interpolation}
 \begin{figure}[t]
@@ -73,6 +77,7 @@ Here $\mathbf{P}_j$ is the $j$th rows of the prolongation operator that computes
 Therefore the prolongation operator for node $i$, $\mathbf{P}_i$ is then:
 \begin{equation}
 \mathbf{P}_i = -\sum_{j \in \mathcal{N}_i}(\mathbf{L}_{ii})^{-1}\mathbf{L}_{ij}\mathbf{P}_j
+\label{equ:p_cell_center}
 \end{equation}
 \subsection{Interpolation of Fine Nodes that Coincide with a Coarse node in 2D}
 This as the simplest case, same as a standard multi-linear interpolation, the fine node displacement are injected from the corresponding coarse node, while the rotational DOF are ignored.

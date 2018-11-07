@@ -1,0 +1,61 @@
+\section{Prolongation at Coarse Level}
+\label{sec:Prolongation_Coarse}
+At coarse level, the building of the prolongation operator is quite different from the top level for three main reasons: first, the number of DOF per node has changed from $2$ to $3$ in 2D, and $3$ to $6$ in 3D. Second, the element cell matrix is no longer easily accessible, they can be computed using Galerkin coarsening of the cell matrices, but when building the local problems, same cell matrix may be reused up to 8 times. Storing them can void the overhead of recomputing the cell stiffness repeatedly but it would require $8 \times 8 \times 6 \times 6 = 2304$ doubles per element, which is prohibitively expensive. Third and most importantly, the local problems sometimes can has a nullity as many as 12, which is significant higher than the local problem at the finest level. But also, $\mathbf{L}^{(p)}_{ff}$ may always be invertible in Equation~\ref{equ:p_solution}. Or worse, $\hat{\epsilon}_1$ may not be $\in \text{Range}(\mathbf{L}^{(p)}_{ff})$ for Theorem~\ref{theo:p_solution}. It is worth noting that based on Theorem~\ref{theo:p_solution}, for some of the nodes $K_{i,p} = \infty$. It implies a point based smoother, Gauss-Seidel or Jacobi, can potentially stagnate. Therefore, a smoother of a larger radius should be used. Now, to reconcile the three problems, and to build the prolongation matrix, here are two possible remedies:
+\begin{enumerate}
+\item Still using the local problem created by combining cell matrices, but project $\hat{\epsilon}_1$ onto $\text{Range}(\mathbf{L}^{(p)}_{ff})$, and use a psudo-inverse of $\mathbf{L}^{(p)}_{ff}$, while still maintains the orthogonality condition in Equation~\ref{equ:local_metric}.
+\item Redefining the local problem so that $\hat{\epsilon}_1 \in \text{Range}(\mathbf{L}^{(p)}_{ff})$ and $\mathbf{L}^{(p)}_{ff}$ is invertible.
+\end{enumerate}
+Using remedy 1, not only requires either store or compute the cell matrix on the fly, it also requires the singular value decomposition of the local matrix to compute the psudo-inverse of $\mathbf{L}^{(p)}_{ff}$ and correct project prolongation operator so that it can correct prolongate null energy modes. The potential high cost of remedy 1 made it very impracticable. Alternatively, we adopted remedy 2 that similar to \cite{dendy1982black}, in which the name black box multigrid is used. But here I refer the construction of the prolongation operator as \textit{stencil collapse}, the reason will be obvious in the following section.
+\section{Building Prolongation Operator using Stencil Collapse}
+I want start to clarify that the method introduced in this section, though can correctly interpolate rigid body motion, it imposes significant more artificial boundary condition in the local problem and can potentially creates prolongation operator that is worse than remedy 1. But it is significantly cheaper and in our examples has demonstrated that it is sufficient to have a good convergence behavior when paired with a good smoother. 
+\subsection{The 2D Case}
+Let's consider 2D first. If the fine node is coincided with a coarse node geometrically in the undeformed space, the prolongation operator is a simple injection. If the fine node lies in the center of the coarse node, the expression for the prolongation operator is identical to Equation~\ref{equ:p_cell_center}. The case that is different, is when the fine node lies on a coarse cell edge center, see Figure~\ref{BBMG/rotation.png}. In such case, we will assume that node \textit{LT}, \textit{L}, and \textit{LB} are undergoing the same rigid body motion. So is \textit{CT}, \textit{C}, and \textit{CB}. And \textit{RT}, \textit{R}, and \textit{RB}. Therefore we can write:
+\begin{align*}
+ \mathbf{u}^f_{*T} &= \left(\begin{array}{c} u^c_*(x) - u^c_*(\theta)h \\ u^c_*(y) \\ u^c_*(\theta) \end{array}\right) \\
+ \mathbf{u}^f_{*} &= \left(\begin{array}{c} u^c_*(x) \\ u^c_*(y) \\ u^c_*(\theta) \end{array}\right) \\
+ \mathbf{u}^f_{*B} &= \left(\begin{array}{c} u^c_*(x) + u^c_*(\theta)h \\ u^c_*(y) \\ u^c_*(\theta) \end{array}\right) 
+\end{align*}
+ * here can be \textit{L},  \textit{C}, or \textit{R}. $h$ is the length of the cell element, which  \textbf{doubles with each multigrid level}. We can see that each is a linear transformation from the center node. Therefore alternatively, we can write it as:
+ \begin{align*}
+ \mathbf{u}^f_{*T} &= \mathbf{T}_{*T}\mathbf{u}^f_{*} \\
+ \mathbf{u}^f_{*} &= \mathbf{T}_{*} \mathbf{u}^f_{*} \\
+ \mathbf{u}^f_{*B} &=  \mathbf{T}_{*B}\mathbf{u}^f_{*} 
+\end{align*}
+$\mathbf{T}$ is the linear transformation that transforms each node based on the rigid body defined by the central node. $\mathbf{T}_*$ is just the identity matrix. Now if we define $\mathbf{L}_i(j)$ is the stencil between node $i$ and $j$, $i$ as the output node. Therefore, we may write the local problem as:
+\begin{equation}
+\label{equ:local_equation}
+\sum_{j\in\{LT,L,LB\}}\mathbf{L}_i(j)\mathbf{T}_{j}\mathbf{u}^f_{L} + \sum_{j\in\{RT,R,RB\}}\mathbf{L}_i(j)\mathbf{L}_{j}\mathbf{u}^f_{R} + \sum_{j\in\{CT,C,CB\}}\mathbf{L}_i(j)\mathbf{L}_{j}\mathbf{u}^f_{C} = 0 
+\end{equation}
+If we collapse the stencils and define:
+\begin{align*}
+\mathbf{S}_L &= \sum_{j\in\{LT,L,LB\}}\mathbf{L}_i(j)\mathbf{T}_{j}\\
+\mathbf{S}_C &= \sum_{j\in\{CT,C,CB\}}\mathbf{L}_i(j)\mathbf{T}_{j}\\
+\mathbf{S}_R &= \sum_{j\in\{RT,R,RB\}}\mathbf{L}_i(j)\mathbf{T}_{j}
+\end{align*}
+Otherwise, we can write it as:
+\begin{equation}
+\label{equ:sol_stencil_collapse}
+ \mathbf{u}^f_{C} = -\mathbf{S}_C^{-1}\mathbf{S}_L\mathbf{u}^f_{L} -\mathbf{S}_C^{-1}\mathbf{S}_R\mathbf{u}^f_{R}
+\end{equation}
+the prolongation stencil of the left node to the center node $i$ is then:
+\begin{equation}
+\label{equ:P_stencil_collapse}
+\mathbf{P}_i(L) = -\mathbf{S}_C^{-1}\mathbf{S}_L
+\end{equation}
+Similarly the right side:
+\begin{equation}
+\mathbf{P}_i(R) = -\mathbf{S}_C^{-1}\mathbf{S}_R
+\end{equation}
+\subsection{The 3D Case}
+For the 3D case, with the 4 difference cases:
+\begin{enumerate}
+\item If the fine node is coincided with a coarse node geometrically in the undeformed space, the prolongation operator is a simple injection. 
+\item If the fine nodes lies on a coarse cell edge center, the derivation is extremely similar to the 2D case. We collapse the stencils of the three faces. Each face consider to have the same rigid body motion defined by the the face center DOF.
+\item If the fine nodes lies on the coarse cell face center, due to that the four dependent nodes can be correctly interpolated from the surrounding coarse nodes, see Equation~\ref {equ:embedding_set}, we consider the nine edges, perpendicular to the faces, each has its own rigid body motion defined be the center node of the edge. Then, the same stencil collapsing method can be applied.
+\item If the fine node lies in the center of the coarse node, the expression for the prolongation operator is identical to Equation~\ref{equ:p_cell_center}. 
+\end{enumerate}
+\subsection{Prolongation of Rigid Body Motion}
+\begin{lem}If the center collapsed stencil $\mathbf{S}_C$ is invertible, the prolongation operator created by Equation~\ref{equ:P_stencil_collapse} can correctly prolongate rigid body motion.\end{lem}
+\begin{proof}
+If $\mathbf{S}_C$ is invertible, Equation~\ref{equ:sol_stencil_collapse} is the unique solution to Equation~\ref{equ:local_equation}. rigid body motion is a null energy mode. Therefore a rigid body motion will also satisfies Equation~\ref{equ:local_equation}. Given that the solution is unique, solution provided by Equation~\ref{equ:sol_stencil_collapse} is rigid body motion, if $\mathbf{u}^f_{L}$ and $\mathbf{u}^f_{R}$ is prescribed with the same rigid body motion.
+\end{proof}

@@ -30,6 +30,7 @@ But in many cases, only the top level operator is provided to the solver, and th
 
 When the underlining PDE is unavailable, there is the possibility to acquire the geometric coarsened operator through homogenization of Galerkin coarsened operator which is demonstrated in work [\cite{moulton1998black}]. But this is aspect is not the focus of this work. Therefore I will leave out here the discussion of homogenization.
 \section{Geometric Coarsening}
+\label{sec:geo_coarsen}
 Geometric coarsening refers to the method of constructing the Multigrid hierarchy through re-discretization with different grid size. It has been proven effective for both homogeneous Poisson[\cite{mcadams2010parallel}] and homogeneous elasticity[\cite{zhu2010efficient}]. Here I will take finite difference Poisson discretization as an example to demonstrates the geometric coarsening principles and its limitation. For more details, I would refer the reader to the work[\cite{mcadams2010parallel}].
 
 The continuous PDE of homogeneous Poisson can be written as:

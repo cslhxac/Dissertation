@@ -100,16 +100,16 @@ and $K_{i,p} = <\hat{\epsilon}_1,\hat{\delta}_1>$, for $p = 1\text{ or }2$.
 First part of Theorem~\ref{theo:p_solution} states that if there is no solution exists, multigrid can not converge for the error mode containing node $i$. From Lemma~\ref{lemma:q_existance}, there is no solution if node $i$ has zero diagonal. Therefore any error modes that has a non-zero error for node $i$, is in the null space of the original matrix, then there is no solution to the original matrix.
 
 Second part of Theorem~\ref{theo:p_solution}, states how we can compute the prolongation operator:
-\begin{align*}
-\hat{\epsilon}_1 &= \mathbf{L}^{(p)}_{ff}\hat{\delta}_1\\
-\hat{\delta}_1 &= (\mathbf{L}^{(p)}_{ff})^{(-1)}\hat{\epsilon}_1\\
-\mathbf{q}_i^* &= (\mathbf{e}^T_i\mathbf{Q})^T\\
-&= \mathbf{Q}^T\epsilon_i \\
-&= \left(\begin{array}{c} 0 \\ \mathbf{P}^T_{fc}\epsilon_i\end{array}\right) \\
-&= \left(\begin{array}{c}0 \\ -\mathbf{L}^{(p)}_{cf}\hat{\delta}_1\end{array}\right) \\
-\mathbf{P}^T_{fc}\epsilon_i &=  -\mathbf{L}^{(p)}_{cf}\hat{\delta}_1 \\
-&= -\mathbf{L}^{(p)}_{cf}(\mathbf{L}^{(p)}_{ff})^{-1}\hat{\epsilon}_1
-\end{align*}
+\begin{align}
+\hat{\epsilon}_1 &= \mathbf{L}^{(p)}_{ff}\hat{\delta}_1 \nonumber \\
+\hat{\delta}_1 &= (\mathbf{L}^{(p)}_{ff})^{(-1)}\hat{\epsilon}_1 \nonumber \\
+\mathbf{q}_i^* &= (\mathbf{e}^T_i\mathbf{Q})^T \nonumber \\
+&= \mathbf{Q}^T\epsilon_i \nonumber \\
+&= \left(\begin{array}{c} 0 \\ \mathbf{P}^T_{fc}\epsilon_i\end{array}\right) \nonumber \\
+&= \left(\begin{array}{c}0 \\ -\mathbf{L}^{(p)}_{cf}\hat{\delta}_1\end{array}\right) \nonumber \\
+\mathbf{P}^T_{fc}\epsilon_i &=  -\mathbf{L}^{(p)}_{cf}\hat{\delta}_1 \nonumber \\
+&= -\mathbf{L}^{(p)}_{cf}(\mathbf{L}^{(p)}_{ff})^{-1}\hat{\epsilon}_1 \label{equ:p_solution}
+\end{align}
 $\mathbf{P}^T_{fc}\epsilon_i$ is a row of the prolongation operator. A practical way for computing it when using metric $M_{i,1}$, is to set the coarse nodes in the local problem as Dirichlet. By setting each degrees of freedom $j$ with value of $1$, i.e. a Kronecker delta. Solving the local problem, the value(s) of the DOF of fine node $i$ is then the entry $\epsilon^T_i\mathbf{P}_{fc}\epsilon_j$.
 Here each row of the prolongation operator is the harmonic extension of a canonical basis vector.
 If reader are interested in the proof of Lemma~\ref{lemma:q_existance} and Theorem~\ref{theo:p_solution}, I refer reader to \cite{brezina2001algebraic}. Here, I will only use the result and viewing their implications. Furthermore, it is worth noting that in work \cite{henson2001element}, an alternative formulation of equation~\ref{equ:local_metric} in the perspective of energy minimization was proposed, upon which work \cite{dohrmann2007interpolation} was based. As it is unimportant for the derivation of our method, I will omit that formulation here.
